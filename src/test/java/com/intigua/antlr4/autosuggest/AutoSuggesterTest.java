@@ -1,12 +1,14 @@
 package com.intigua.antlr4.autosuggest;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 import static com.intigua.antlr4.autosuggest.CasePreference.*;
 
 import java.util.Arrays;
 import java.util.Collection;
 
+import fr.insee.vtl.parser.VtlLexer;
+import fr.insee.vtl.parser.VtlParser;
 import org.antlr.runtime.RecognitionException;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Lexer;
@@ -225,6 +227,16 @@ public class AutoSuggesterTest {
         givenGrammar("clause: clause AND clause | action", "action: 'action'", "AND: 'AND'").whenInput("action AND").thenExpect();
     }
 
+    /**
+     * @see https://github.com/oranoran/antlr4-autosuggest/issues/7
+     */
+    @Test
+    public void suggest_issue7() {
+        givenGrammar(VtlLexer.class, VtlParser.class)
+                .whenInput("a := un")
+                .thenExpectToContain("union");
+    }
+
     @Test
     public void suggest_withRecursiveRule_shouldFollowTransitionOnce_andNotCauseStackOverflow() {
         givenGrammar("a: b | a a", "b: 'B'").whenInput("B").thenExpect("B");
@@ -313,6 +325,10 @@ public class AutoSuggesterTest {
 
     private void thenExpect(String... expectedCompletions) {
         assertThat(this.suggestedCompletions, containsInAnyOrder(expectedCompletions));
+    }
+
+    private void thenExpectToContain(String... items) {
+        assertThat(this.suggestedCompletions, hasItems(items));
     }
 
     private LexerAndParserFactory loadGrammar(String... grammarlines) {
